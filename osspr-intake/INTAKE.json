@@ -1,0 +1,50 @@
+[
+  {
+    "upstream_repo": "ZFTurbo/Weighted-Boxes-Fusion",
+    "head_sha": "9ac1e7c28de1ab36962d9321c06b2ad4b0441b9c",
+    "file": "ensemble_boxes/ensemble_boxes_nms.py",
+    "function": "ensemble_boxes.ensemble_boxes_nms.cpu_soft_nms_float",
+    "native_test_cmd": "python -m pytest tests/test_bbox.py -q",
+    "bench_cmd": "python osspr-intake/harness/bench_cpu_soft_nms_float.py",
+    "baseline_median_ms": 77.976,
+    "baseline_noise_pct": 3.04,
+    "tests_pass_on_baseline": true,
+    "why": "Gaussian soft-NMS on 3200 boxes from four single-class models. The kernel is a Python loop that copies scalars and reduces the whole remaining tail on every step. Standard NMS of a similar array is already a numba kernel and several times faster, so the same decay math can shed well over 20% here. Noise is the full 7-sample spread, (max-min)/median. No open upstream PR or issue covers this function."
+  },
+  {
+    "upstream_repo": "ZFTurbo/Weighted-Boxes-Fusion",
+    "head_sha": "9ac1e7c28de1ab36962d9321c06b2ad4b0441b9c",
+    "file": "ensemble_boxes/ensemble_boxes_nmw.py",
+    "function": "ensemble_boxes.ensemble_boxes_nmw.find_matching_box",
+    "native_test_cmd": "python -m pytest tests -q",
+    "bench_cmd": "python osspr-intake/harness/bench_nmw_find_matching_box.py",
+    "baseline_median_ms": 250.305,
+    "baseline_noise_pct": 2.31,
+    "tests_pass_on_baseline": true,
+    "why": "Clustering scan inside non-maximum weighted fusion: five models, 600 boxes each, eight classes. Each box walks current clusters in Python and calls scalar IoU. Axis-aligned WBF already replaced this pattern with a vectorized scan and kept the same match index; this copy did not, so a 20% cut is a low estimate. Noise is the full 7-sample spread, (max-min)/median. The repo tests pass and import the package; they do not assert this function. No open upstream PR or issue covers it."
+  },
+  {
+    "upstream_repo": "ZFTurbo/Weighted-Boxes-Fusion",
+    "head_sha": "9ac1e7c28de1ab36962d9321c06b2ad4b0441b9c",
+    "file": "ensemble_boxes/ensemble_boxes_wbf_3d.py",
+    "function": "ensemble_boxes.ensemble_boxes_wbf_3d.find_matching_box",
+    "native_test_cmd": "python -m pytest tests -q",
+    "bench_cmd": "python osspr-intake/harness/bench_wbf3d_find_matching_box.py",
+    "baseline_median_ms": 145.528,
+    "baseline_noise_pct": 2.27,
+    "tests_pass_on_baseline": true,
+    "why": "Per-label match scan inside 3D weighted box fusion: four models, 400 boxes each. Pairs go through a Python loop around a scalar numba IoU. Vectorizing that scan the way 2D WBF did should keep the chosen index and cut well over 20%. Noise is the full 7-sample spread, (max-min)/median. The repo tests pass and import the package; they do not assert this function. No open upstream PR or issue covers it."
+  },
+  {
+    "upstream_repo": "ZFTurbo/Weighted-Boxes-Fusion",
+    "head_sha": "9ac1e7c28de1ab36962d9321c06b2ad4b0441b9c",
+    "file": "ensemble_boxes/ensemble_boxes_wbf.py",
+    "function": "ensemble_boxes.ensemble_boxes_wbf.prefilter_boxes",
+    "native_test_cmd": "python -m pytest tests/test_bbox.py -q",
+    "bench_cmd": "python osspr-intake/harness/bench_wbf_prefilter_boxes.py",
+    "baseline_median_ms": 19.765,
+    "baseline_noise_pct": 2.58,
+    "tests_pass_on_baseline": true,
+    "why": "Every 2D weighted-boxes-fusion call validates and groups boxes in a Python loop. This workload is five models and 3000 boxes each. The experimental prefilter already does the same clamping and grouping with array operations and is several times faster on clean boxes, so 20% is a low estimate. Noise is the full 7-sample spread, (max-min)/median. tests/test_bbox.py reaches it through weighted_boxes_fusion. No open upstream PR or issue covers it. Skipped the already-targeted get_weighted_box and bb_iou_array in this file."
+  }
+]
